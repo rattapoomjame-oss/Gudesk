@@ -441,6 +441,9 @@ abstract class BasePeersView extends StatelessWidget {
       case PeerTabIndex.group:
         peers = gFFI.groupModel.peersModel;
         break;
+      case PeerTabIndex.directory:
+        peers = gFFI.recentPeersModel; // GuDesk: directory tab uses its own page
+        break;
     }
     return _PeersView(
         peers: peers,

@@ -823,6 +823,8 @@ abstract class BasePeerCard extends StatelessWidget {
               break;
             case PeerTabIndex.group:
               break;
+            case PeerTabIndex.directory:
+              break; // GuDesk: directory uses its own delete flow
           }
           if (tab != PeerTabIndex.ab) {
             showToast(translate('Successful'));

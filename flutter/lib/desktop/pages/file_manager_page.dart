@@ -26,6 +26,8 @@ import '../../common.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import '../widgets/popup_menu.dart';
+import '../../gudesk/transfer/file_bridge.dart'; // GuDesk: GdTransferPayload + JobProgress.toSnapshot()
+import '../../gudesk/transfer/transfer_panel.dart'; // GuDesk: enhanced transfer panel
 
 /// status of location bar
 enum LocationStatus {
@@ -175,7 +177,7 @@ class _FileManagerPageState extends State<FileManagerPage>
                   flex: 3,
                   child: dropArea(FileManagerView(
                       model.remoteController, _ffi, _mouseFocusScope))),
-              Flexible(flex: 2, child: statusList())
+              Flexible(flex: 2, child: GdTransferPanel(jobController: jobController)) // GuDesk
             ],
           ),
         ));
@@ -184,16 +186,35 @@ class _FileManagerPageState extends State<FileManagerPage>
   }
 
   Widget dropArea(FileManagerView fileView) {
-    return DropTarget(
-        onDragDone: (detail) =>
-            handleDragDone(detail, fileView.controller.isLocal),
-        onDragEntered: (enter) {
-          _dropMaskVisible.value = true;
-        },
-        onDragExited: (exit) {
-          _dropMaskVisible.value = false;
-        },
-        child: fileView);
+    // GuDesk: outer DragTarget accepts within-app drags (local ↔ remote panel).
+    return DragTarget<GdTransferPayload>(
+      onWillAcceptWithDetails: (details) =>
+          details.data.sourceController.isLocal != fileView.controller.isLocal,
+      onAcceptWithDetails: (details) {
+        final payload = details.data;
+        final dest = fileView.controller.directoryData();
+        payload.sourceController.sendFiles(payload.items, dest);
+      },
+      builder: (ctx, candidateData, _) {
+        final dragging = candidateData.isNotEmpty;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: dragging
+              ? BoxDecoration(
+                  border: Border.all(color: MyTheme.accent, width: 2),
+                  borderRadius: BorderRadius.circular(4),
+                )
+              : null,
+          child: DropTarget(
+            onDragDone: (detail) =>
+                handleDragDone(detail, fileView.controller.isLocal),
+            onDragEntered: (_) => _dropMaskVisible.value = true,
+            onDragExited: (_) => _dropMaskVisible.value = false,
+            child: fileView,
+          ),
+        );
+      },
+    );
   }
 
   Widget generateCard(Widget child) {
@@ -1148,7 +1169,23 @@ class _FileManagerViewState extends State<FileManagerView> {
                 details.globalPosition.dy);
           }
 
-          return Padding(
+          // GuDesk: LongPressDraggable enables panel-to-panel file drag.
+          return LongPressDraggable<GdTransferPayload>(
+            data: GdTransferPayload(
+              items: SelectedItems(isLocal: isLocal)..add(entry),
+              sourceController: controller,
+            ),
+            feedback: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                color: MyTheme.accent.withValues(alpha: 0.9),
+                child: Text(entry.name,
+                    style: const TextStyle(color: Colors.white, fontSize: 13)),
+              ),
+            ),
+            child: Padding(
             padding: EdgeInsets.symmetric(vertical: 1),
             child: Obx(() => Container(
                 decoration: BoxDecoration(
@@ -1275,7 +1312,8 @@ class _FileManagerViewState extends State<FileManagerView> {
                     ),
                   ],
                 ))),
-          );
+          ),  // closes Padding (child of LongPressDraggable)
+          );  // closes LongPressDraggable
         }).toList(growable: false);
 
         return Column(

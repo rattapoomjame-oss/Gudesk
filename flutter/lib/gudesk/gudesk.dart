@@ -9,3 +9,4 @@ export 'status/device_status.dart';
 export 'status/status_service.dart';
 export 'status/ws_client.dart';
 export 'recording/recording.dart';
+export 'transfer/transfer.dart';
