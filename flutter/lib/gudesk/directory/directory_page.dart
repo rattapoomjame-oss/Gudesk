@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../recording/recordings_page.dart';
 import '../status/status_service.dart';
 import 'dialogs.dart';
 import 'directory_controller.dart';
@@ -115,6 +116,20 @@ class _Toolbar extends StatelessWidget {
               ),
             );
           }),
+          // Recordings browser
+          Tooltip(
+            message: 'Session recordings',
+            child: IconButton(
+              icon: const Icon(Icons.video_library_outlined, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const RecordingsPage()),
+              ),
+            ),
+          ),
           // Status / connection indicator
           _StatusIndicator(),
         ],

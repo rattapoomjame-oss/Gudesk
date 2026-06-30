@@ -21,8 +21,9 @@ class GdDb {
     final path = p.join(dir.path, 'gudesk.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -92,6 +93,14 @@ class GdDb {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_devices_dir      ON devices(directory_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_sessions_remote  ON sessions(remote_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_recordings_sess  ON recordings(session_id)');
+    // v2: unique guard so duplicate file scans are idempotent
+    await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_recordings_filename ON recordings(filename)');
+  }
+
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_recordings_filename ON recordings(filename)');
+    }
   }
 
   // ── Directories ──────────────────────────────────────────────────────────
