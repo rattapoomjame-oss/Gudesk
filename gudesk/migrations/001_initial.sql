@@ -13,12 +13,15 @@ CREATE TABLE IF NOT EXISTS devices (
     remote_id    TEXT    NOT NULL UNIQUE,
     alias        TEXT,
     directory_id INTEGER REFERENCES directories(id) ON DELETE SET NULL,
-    tags         TEXT    DEFAULT '[]',
+    tags         TEXT    NOT NULL DEFAULT '[]',
     notes        TEXT,
     last_seen    TEXT,
     status       TEXT    NOT NULL DEFAULT 'UNKNOWN',
     platform     TEXT,
     version      TEXT,
+    color_label  TEXT,
+    is_favorite  INTEGER NOT NULL DEFAULT 0,
+    is_pinned    INTEGER NOT NULL DEFAULT 0,
     created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );

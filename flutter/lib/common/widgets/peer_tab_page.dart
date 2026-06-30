@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/gudesk/directory/directory_page.dart';
 import 'package:flutter_hbb/common/widgets/address_book.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/common/widgets/my_group.dart';
@@ -66,6 +67,8 @@ class _PeerTabPageState extends State<PeerTabPage>
       ),
       ({dynamic hint}) => gFFI.groupModel.pull(force: hint == null),
     ),
+    // GuDesk: local device directory
+    _TabEntry(DirectoryPage(menuPadding: _menuPadding())),
   ];
   RelativeRect? mobileTabContextMenuPos;
 
