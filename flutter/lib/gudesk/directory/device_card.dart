@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../status/formatting.dart';
 import 'dialogs.dart';
 import 'directory_controller.dart';
 import 'models.dart';
@@ -37,7 +38,7 @@ class GdDeviceCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _StatusDot(device.status),
+              _StatusDot(device.status, device.lastSeen),
               const SizedBox(width: 8),
               _PlatformIcon(device.platform),
               const SizedBox(width: 8),
@@ -51,15 +52,16 @@ class GdDeviceCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 13),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (device.alias != null)
-                      Text(
-                        device.remoteId,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      device.alias != null
+                          ? device.remoteId
+                          : formatLastSeen(device.lastSeen, device.status),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -194,16 +196,22 @@ class GdDeviceCard extends StatelessWidget {
 
 class _StatusDot extends StatelessWidget {
   final GdDeviceStatus status;
-  const _StatusDot(this.status);
+  final String? lastSeen;
+  const _StatusDot(this.status, this.lastSeen);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: _color,
+    final label = statusLabel(status);
+    final seen = formatLastSeen(lastSeen, status);
+    return Tooltip(
+      message: '$label\nLast seen: $seen',
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _color,
+        ),
       ),
     );
   }

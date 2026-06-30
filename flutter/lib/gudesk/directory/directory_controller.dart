@@ -116,6 +116,17 @@ class DirectoryController extends GetxController {
   Future<void> addDevice(GdDevice d) async {
     final id = await GdDb.insertDevice(d);
     devices.add(d.copyWith(id: id));
+    // Immediately probe the new device's online status
+    _pollStatus(d.remoteId);
+  }
+
+  void _pollStatus(String remoteId) {
+    // Trigger GdStatusService poll if it's running
+    if (Get.isRegistered<dynamic>(tag: 'gudesk_status')) {
+      try {
+        (Get.find(tag: 'gudesk_status') as dynamic).pollNow();
+      } catch (_) {}
+    }
   }
 
   Future<void> updateDevice(GdDevice d) async {

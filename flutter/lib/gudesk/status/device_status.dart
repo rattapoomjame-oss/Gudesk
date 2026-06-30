@@ -1,2 +1,2 @@
-// Phase 3: Device online/offline status
-// States: ONLINE, OFFLINE, CONNECTING, BUSY, UNKNOWN
+export 'status_service.dart';
+export 'ws_client.dart';
