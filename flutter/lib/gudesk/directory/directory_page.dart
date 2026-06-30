@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../recording/recordings_page.dart';
 import '../status/status_service.dart';
+import '../device/peer_info_listener.dart';
 import '../update/update_controller.dart';
 import '../update/update_dialog.dart';
 import 'dialogs.dart';
@@ -32,6 +33,7 @@ class _DirectoryPageState extends State<DirectoryPage> {
     if (!Get.isRegistered<GdUpdateController>(tag: 'gudesk_update')) {
       Get.put(GdUpdateController(), tag: 'gudesk_update', permanent: true);
     }
+    GdPeerInfoListener.instance.start();
     _ctrl = DirectoryController.to;
   }
 
@@ -121,6 +123,8 @@ class _Toolbar extends StatelessWidget {
               ),
             );
           }),
+          // Tag filter
+          _TagFilterButton(ctrl: ctrl),
           // Recordings browser
           Tooltip(
             message: 'Session recordings',
@@ -142,6 +146,77 @@ class _Toolbar extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── Tag filter button ─────────────────────────────────────────────────────
+
+/// Toolbar button that opens a tag picker; active when a tag filter is set.
+class _TagFilterButton extends StatelessWidget {
+  final DirectoryController ctrl;
+  const _TagFilterButton({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final active = ctrl.tagFilter.value.isNotEmpty;
+      return Tooltip(
+        message: active
+            ? 'Tag filter: ${ctrl.tagFilter.value} (tap to clear)'
+            : 'Filter by tag',
+        child: IconButton(
+          icon: Badge(
+            isLabelVisible: active,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: Icon(
+              Icons.label_outline,
+              size: 20,
+              color: active
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+            ),
+          ),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: active
+              ? () => ctrl.tagFilter.value = ''
+              : () => _showTagPicker(context),
+        ),
+      );
+    });
+  }
+
+  Future<void> _showTagPicker(BuildContext context) async {
+    final tags = ctrl.allTags();
+    if (tags.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tags yet — add tags to devices via Info & Notes'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Filter by tag'),
+        children: [
+          for (final tag in tags)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, tag),
+              child: Row(
+                children: [
+                  const Icon(Icons.label, size: 16),
+                  const SizedBox(width: 8),
+                  Text(tag),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (selected != null) ctrl.tagFilter.value = selected;
   }
 }
 

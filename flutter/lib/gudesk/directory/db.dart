@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -21,7 +22,7 @@ class GdDb {
     final path = p.join(dir.path, 'gudesk.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -65,6 +66,9 @@ class GdDb {
         color_label  TEXT,
         is_favorite  INTEGER NOT NULL DEFAULT 0,
         is_pinned    INTEGER NOT NULL DEFAULT 0,
+        hostname     TEXT    NOT NULL DEFAULT '',
+        os_detail    TEXT    NOT NULL DEFAULT '',
+        ip_last      TEXT    NOT NULL DEFAULT '',
         created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
         updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
       )
@@ -100,6 +104,11 @@ class GdDb {
   static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_recordings_filename ON recordings(filename)');
+    }
+    if (oldVersion < 3) {
+      await db.execute("ALTER TABLE devices ADD COLUMN hostname  TEXT NOT NULL DEFAULT ''");
+      await db.execute("ALTER TABLE devices ADD COLUMN os_detail TEXT NOT NULL DEFAULT ''");
+      await db.execute("ALTER TABLE devices ADD COLUMN ip_last   TEXT NOT NULL DEFAULT ''");
     }
   }
 
@@ -180,6 +189,42 @@ class GdDb {
       where: 'id = ?',
       whereArgs: [deviceId],
     );
+  }
+
+  static Future<void> patchDeviceInfo(
+    String remoteId, {
+    String? hostname,
+    String? platform,
+    String? version,
+    String? osDetail,
+    String? ipLast,
+  }) async {
+    final db = await instance;
+    final updates = <String, Object?>{
+      if (hostname != null && hostname.isNotEmpty) 'hostname': hostname,
+      if (platform != null && platform.isNotEmpty) 'platform': platform,
+      if (version != null && version.isNotEmpty) 'version': version,
+      if (osDetail != null && osDetail.isNotEmpty) 'os_detail': osDetail,
+      if (ipLast != null && ipLast.isNotEmpty) 'ip_last': ipLast,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (updates.length <= 1) return; // nothing to update beyond timestamp
+    await db.update('devices', updates,
+        where: 'remote_id = ?', whereArgs: [remoteId]);
+  }
+
+  static Future<List<String>> getAllTags() async {
+    final db = await instance;
+    final rows = await db.query('devices', columns: ['tags']);
+    final Set<String> all = {};
+    for (final row in rows) {
+      try {
+        final tags =
+            List<String>.from(jsonDecode(row['tags'] as String? ?? '[]'));
+        all.addAll(tags);
+      } catch (_) {}
+    }
+    return all.toList()..sort();
   }
 
   static Future<void> upsertDeviceStatus(String remoteId, String status) async {

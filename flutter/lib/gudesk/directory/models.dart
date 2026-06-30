@@ -95,6 +95,10 @@ class GdDevice {
   final String? colorLabel;
   final bool isFavorite;
   final bool isPinned;
+  // Phase 7: auto-populated from peer_info on connection
+  final String hostname;
+  final String osDetail;
+  final String ipLast;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -112,6 +116,9 @@ class GdDevice {
     this.colorLabel,
     this.isFavorite = false,
     this.isPinned = false,
+    this.hostname = '',
+    this.osDetail = '',
+    this.ipLast = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -132,6 +139,9 @@ class GdDevice {
     Object? colorLabel = _sentinel,
     bool? isFavorite,
     bool? isPinned,
+    String? hostname,
+    String? osDetail,
+    String? ipLast,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) =>
@@ -149,6 +159,9 @@ class GdDevice {
         colorLabel: colorLabel == _sentinel ? this.colorLabel : colorLabel as String?,
         isFavorite: isFavorite ?? this.isFavorite,
         isPinned: isPinned ?? this.isPinned,
+        hostname: hostname ?? this.hostname,
+        osDetail: osDetail ?? this.osDetail,
+        ipLast: ipLast ?? this.ipLast,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -167,6 +180,9 @@ class GdDevice {
         'color_label': colorLabel,
         'is_favorite': isFavorite ? 1 : 0,
         'is_pinned': isPinned ? 1 : 0,
+        'hostname': hostname,
+        'os_detail': osDetail,
+        'ip_last': ipLast,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
@@ -193,6 +209,9 @@ class GdDevice {
       colorLabel: m['color_label'] as String?,
       isFavorite: (m['is_favorite'] as int? ?? 0) == 1,
       isPinned: (m['is_pinned'] as int? ?? 0) == 1,
+      hostname: m['hostname'] as String? ?? '',
+      osDetail: m['os_detail'] as String? ?? '',
+      ipLast: m['ip_last'] as String? ?? '',
       createdAt: DateTime.parse(m['created_at'] as String),
       updatedAt: DateTime.parse(m['updated_at'] as String),
     );

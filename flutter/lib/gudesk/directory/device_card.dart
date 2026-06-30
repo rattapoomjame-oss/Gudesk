@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../device/device_detail_page.dart';
 import '../status/formatting.dart';
 import 'dialogs.dart';
 import 'directory_controller.dart';
@@ -23,8 +24,7 @@ class GdDeviceCard extends StatelessWidget {
         onTap: onConnect,
         borderRadius: BorderRadius.circular(6),
         child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
             border: device.colorLabel != null
@@ -36,46 +36,53 @@ class GdDeviceCard extends StatelessWidget {
                   )
                 : null,
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _StatusDot(device.status, device.lastSeen),
-              const SizedBox(width: 8),
-              _PlatformIcon(device.platform),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+              SizedBox(
+                height: 32,
+                child: Row(
                   children: [
-                    Text(
-                      device.displayName,
-                      style: const TextStyle(fontSize: 13),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      device.alias != null
-                          ? device.remoteId
-                          : formatLastSeen(device.lastSeen, device.status),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Theme.of(context).textTheme.bodySmall?.color,
+                    _StatusDot(device.status, device.lastSeen),
+                    const SizedBox(width: 8),
+                    _PlatformIcon(device.platform),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            device.displayName,
+                            style: const TextStyle(fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            device.alias != null
+                                ? device.remoteId
+                                : formatLastSeen(device.lastSeen, device.status),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Theme.of(context).textTheme.bodySmall?.color,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
+                    if (device.isPinned)
+                      const Icon(Icons.push_pin, size: 13, color: Colors.orange),
+                    if (device.isFavorite)
+                      const Icon(Icons.star, size: 13, color: Colors.amber),
+                    _ConnectButton(device: device, onConnect: onConnect),
                   ],
                 ),
               ),
-              if (device.isPinned)
-                const Icon(Icons.push_pin, size: 13, color: Colors.orange),
-              if (device.isFavorite)
-                const Icon(Icons.star, size: 13, color: Colors.amber),
               if (device.tags.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(left: 2),
-                  child: _TagBadge(count: device.tags.length),
+                  padding: const EdgeInsets.only(bottom: 4, left: 24),
+                  child: _InlineTagChips(tags: device.tags),
                 ),
-              const SizedBox(width: 4),
-              _ConnectButton(device: device, onConnect: onConnect),
             ],
           ),
         ),
@@ -96,6 +103,14 @@ class GdDeviceCard extends StatelessWidget {
             dense: true,
             leading: Icon(Icons.desktop_windows, size: 18),
             title: Text('Connect'),
+          ),
+        ),
+        PopupMenuItem(
+          value: _DeviceAction.viewInfo,
+          child: const ListTile(
+            dense: true,
+            leading: Icon(Icons.info_outline, size: 18),
+            title: Text('Info & Notes'),
           ),
         ),
         const PopupMenuDivider(),
@@ -168,6 +183,12 @@ class GdDeviceCard extends StatelessWidget {
     switch (result) {
       case _DeviceAction.connect:
         onConnect?.call();
+      case _DeviceAction.viewInfo:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => GdDeviceDetailPage(device: device)),
+        );
       case _DeviceAction.edit:
         await showEditDeviceDialog(context, device);
       case _DeviceAction.move:
@@ -255,25 +276,35 @@ class _PlatformIcon extends StatelessWidget {
   }
 }
 
-class _TagBadge extends StatelessWidget {
-  final int count;
-  const _TagBadge({required this.count});
+class _InlineTagChips extends StatelessWidget {
+  final List<String> tags;
+  const _InlineTagChips({required this.tags});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        '$count',
-        style: TextStyle(
-          fontSize: 9,
-          color: Theme.of(context).colorScheme.secondary,
-          fontWeight: FontWeight.w700,
-        ),
+    final color = Theme.of(context).colorScheme.secondary;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 2,
+        children: tags
+            .map((t) => Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    t,
+                    style: TextStyle(
+                        fontSize: 9,
+                        color: color,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ))
+            .toList(),
       ),
     );
   }
@@ -311,4 +342,13 @@ class _ConnectButtonState extends State<_ConnectButton> {
   }
 }
 
-enum _DeviceAction { connect, edit, move, colorLabel, toggleFavorite, togglePin, delete }
+enum _DeviceAction {
+  connect,
+  viewInfo,
+  edit,
+  move,
+  colorLabel,
+  toggleFavorite,
+  togglePin,
+  delete,
+}

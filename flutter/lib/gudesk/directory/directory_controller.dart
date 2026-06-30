@@ -10,6 +10,7 @@ class DirectoryController extends GetxController {
   final devices = <GdDevice>[].obs;
   final expandedIds = <int>{}.obs;
   final searchQuery = ''.obs;
+  final tagFilter = ''.obs;
   final isLoading = false.obs;
 
   @override
@@ -40,10 +41,20 @@ class DirectoryController extends GetxController {
       directories.where((d) => d.parentId == parentId).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
+  List<String> allTags() {
+    final Set<String> tags = {};
+    for (final d in devices) {
+      tags.addAll(d.tags);
+    }
+    return tags.toList()..sort();
+  }
+
   List<GdDevice> devicesIn(int? directoryId) {
     final q = searchQuery.value.toLowerCase();
+    final tf = tagFilter.value;
     return devices.where((d) {
       if (d.directoryId != directoryId) return false;
+      if (tf.isNotEmpty && !d.tags.contains(tf)) return false;
       if (q.isEmpty) return true;
       return d.remoteId.toLowerCase().contains(q) ||
           (d.alias?.toLowerCase().contains(q) ?? false) ||
