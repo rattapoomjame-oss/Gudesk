@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../recording/recordings_page.dart';
 import '../status/status_service.dart';
+import '../update/update_controller.dart';
+import '../update/update_dialog.dart';
 import 'dialogs.dart';
 import 'directory_controller.dart';
 import 'directory_tree.dart';
@@ -26,6 +28,9 @@ class _DirectoryPageState extends State<DirectoryPage> {
     }
     if (!Get.isRegistered<GdStatusService>(tag: 'gudesk_status')) {
       Get.put(GdStatusService(), tag: 'gudesk_status', permanent: true);
+    }
+    if (!Get.isRegistered<GdUpdateController>(tag: 'gudesk_update')) {
+      Get.put(GdUpdateController(), tag: 'gudesk_update', permanent: true);
     }
     _ctrl = DirectoryController.to;
   }
@@ -130,6 +135,8 @@ class _Toolbar extends StatelessWidget {
               ),
             ),
           ),
+          // Update badge (hidden when idle)
+          const GdUpdateBadge(),
           // Status / connection indicator
           _StatusIndicator(),
         ],
