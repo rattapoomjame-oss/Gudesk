@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
