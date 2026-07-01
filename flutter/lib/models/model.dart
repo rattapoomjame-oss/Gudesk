@@ -46,6 +46,8 @@ import '../common/widgets/dialog.dart';
 import 'input_model.dart';
 import 'platform_model.dart';
 import 'package:flutter_hbb/utils/scale.dart';
+// GuDesk: chat persistence
+import 'package:flutter_hbb/gudesk/chat/chat_persister.dart';
 
 import 'package:flutter_hbb/generated_bridge.dart'
     if (dart.library.html) 'package:flutter_hbb/web/bridge.dart';
@@ -364,9 +366,11 @@ class FfiModel with ChangeNotifier {
       } else if (name == 'chat_client_mode') {
         parent.target?.chatModel
             .receive(ChatModel.clientModeID, evt['text'] ?? '');
+        GdChatPersister.instance.onReceived(peerId, evt['text'] ?? ''); // GuDesk
       } else if (name == 'chat_server_mode') {
         parent.target?.chatModel
             .receive(int.parse(evt['id'] as String), evt['text'] ?? '');
+        GdChatPersister.instance.onReceived(peerId, evt['text'] ?? ''); // GuDesk
       } else if (name == 'terminal_response') {
         parent.target?.routeTerminalResponse(evt);
       } else if (name == 'file_dir') {

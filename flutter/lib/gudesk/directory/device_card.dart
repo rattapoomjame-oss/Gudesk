@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../chat/chat_history_page.dart';
 import '../device/device_detail_page.dart';
 import '../status/formatting.dart';
 import 'dialogs.dart';
@@ -113,6 +114,14 @@ class GdDeviceCard extends StatelessWidget {
             title: Text('Info & Notes'),
           ),
         ),
+        PopupMenuItem(
+          value: _DeviceAction.chatHistory,
+          child: const ListTile(
+            dense: true,
+            leading: Icon(Icons.chat_bubble_outline, size: 18),
+            title: Text('Chat history'),
+          ),
+        ),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: _DeviceAction.edit,
@@ -188,6 +197,12 @@ class GdDeviceCard extends StatelessWidget {
           context,
           MaterialPageRoute(
               builder: (_) => GdDeviceDetailPage(device: device)),
+        );
+      case _DeviceAction.chatHistory:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => GdChatHistoryPage(device: device)),
         );
       case _DeviceAction.edit:
         await showEditDeviceDialog(context, device);
@@ -345,6 +360,7 @@ class _ConnectButtonState extends State<_ConnectButton> {
 enum _DeviceAction {
   connect,
   viewInfo,
+  chatHistory,
   edit,
   move,
   colorLabel,

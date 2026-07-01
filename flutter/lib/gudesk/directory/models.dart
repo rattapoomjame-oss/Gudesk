@@ -99,6 +99,10 @@ class GdDevice {
   final String hostname;
   final String osDetail;
   final String ipLast;
+  // Phase 11: cloud sync fields
+  final String  password;
+  final String? cloudId;
+  final String  groupName;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -119,6 +123,9 @@ class GdDevice {
     this.hostname = '',
     this.osDetail = '',
     this.ipLast = '',
+    this.password = '',
+    this.cloudId,
+    this.groupName = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -142,6 +149,9 @@ class GdDevice {
     String? hostname,
     String? osDetail,
     String? ipLast,
+    String? password,
+    Object? cloudId = _sentinel,
+    String? groupName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) =>
@@ -162,29 +172,35 @@ class GdDevice {
         hostname: hostname ?? this.hostname,
         osDetail: osDetail ?? this.osDetail,
         ipLast: ipLast ?? this.ipLast,
+        password: password ?? this.password,
+        cloudId: cloudId == _sentinel ? this.cloudId : cloudId as String?,
+        groupName: groupName ?? this.groupName,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
   Map<String, dynamic> toMap() => {
         if (id != null) 'id': id,
-        'remote_id': remoteId,
-        'alias': alias,
+        'remote_id':    remoteId,
+        'alias':        alias,
         'directory_id': directoryId,
-        'tags': jsonEncode(tags),
-        'notes': notes,
-        'last_seen': lastSeen,
-        'status': status.label,
-        'platform': platform,
-        'version': version,
-        'color_label': colorLabel,
-        'is_favorite': isFavorite ? 1 : 0,
-        'is_pinned': isPinned ? 1 : 0,
-        'hostname': hostname,
-        'os_detail': osDetail,
-        'ip_last': ipLast,
-        'created_at': createdAt.toIso8601String(),
-        'updated_at': updatedAt.toIso8601String(),
+        'tags':         jsonEncode(tags),
+        'notes':        notes,
+        'last_seen':    lastSeen,
+        'status':       status.label,
+        'platform':     platform,
+        'version':      version,
+        'color_label':  colorLabel,
+        'is_favorite':  isFavorite ? 1 : 0,
+        'is_pinned':    isPinned ? 1 : 0,
+        'hostname':     hostname,
+        'os_detail':    osDetail,
+        'ip_last':      ipLast,
+        'password':     password,
+        'cloud_id':     cloudId,
+        'group_name':   groupName,
+        'created_at':   createdAt.toIso8601String(),
+        'updated_at':   updatedAt.toIso8601String(),
       };
 
   factory GdDevice.fromMap(Map<String, dynamic> m) {
@@ -208,10 +224,13 @@ class GdDevice {
       version: m['version'] as String?,
       colorLabel: m['color_label'] as String?,
       isFavorite: (m['is_favorite'] as int? ?? 0) == 1,
-      isPinned: (m['is_pinned'] as int? ?? 0) == 1,
-      hostname: m['hostname'] as String? ?? '',
-      osDetail: m['os_detail'] as String? ?? '',
-      ipLast: m['ip_last'] as String? ?? '',
+      isPinned:   (m['is_pinned']   as int? ?? 0) == 1,
+      hostname:   m['hostname']   as String? ?? '',
+      osDetail:   m['os_detail']  as String? ?? '',
+      ipLast:     m['ip_last']    as String? ?? '',
+      password:   m['password']   as String? ?? '',
+      cloudId:    m['cloud_id']   as String?,
+      groupName:  m['group_name'] as String? ?? '',
       createdAt: DateTime.parse(m['created_at'] as String),
       updatedAt: DateTime.parse(m['updated_at'] as String),
     );

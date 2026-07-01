@@ -12,3 +12,5 @@ export 'recording/recording.dart';
 export 'transfer/transfer.dart';
 export 'update/update.dart';
 export 'device/device.dart';
+export 'chat/chat.dart';
+export 'cloud/cloud.dart';

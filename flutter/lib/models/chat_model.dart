@@ -20,6 +20,8 @@ import '../common.dart';
 import '../common/widgets/overlay.dart';
 import '../main.dart';
 import 'model.dart';
+// GuDesk: chat persistence
+import 'package:flutter_hbb/gudesk/chat/chat_persister.dart';
 
 class MessageKey {
   final String peerId;
@@ -448,6 +450,7 @@ class ChatModel with ChangeNotifier {
     }
     message.text = trimmedText;
     insertMessage(_currentKey, message);
+    GdChatPersister.instance.onSent(_currentKey.peerId, message.text); // GuDesk
     if (_currentKey.connId == clientModeID && parent.target != null) {
       bind.sessionSendChat(sessionId: sessionId, text: message.text);
     } else {

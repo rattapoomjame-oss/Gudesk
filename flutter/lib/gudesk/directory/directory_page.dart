@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../cloud/cloud_controller.dart';
+import '../cloud/login_page.dart';
 import '../recording/recordings_page.dart';
 import '../status/status_service.dart';
 import '../device/peer_info_listener.dart';
@@ -32,6 +34,9 @@ class _DirectoryPageState extends State<DirectoryPage> {
     }
     if (!Get.isRegistered<GdUpdateController>(tag: 'gudesk_update')) {
       Get.put(GdUpdateController(), tag: 'gudesk_update', permanent: true);
+    }
+    if (!Get.isRegistered<GdCloudController>(tag: GdCloudController.tag)) {
+      Get.put(GdCloudController(), tag: GdCloudController.tag, permanent: true);
     }
     GdPeerInfoListener.instance.start();
     _ctrl = DirectoryController.to;
@@ -141,6 +146,8 @@ class _Toolbar extends StatelessWidget {
           ),
           // Update badge (hidden when idle)
           const GdUpdateBadge(),
+          // Cloud sync
+          const _CloudSyncButton(),
           // Status / connection indicator
           _StatusIndicator(),
         ],
@@ -219,6 +226,140 @@ class _TagFilterButton extends StatelessWidget {
     if (selected != null) ctrl.tagFilter.value = selected;
   }
 }
+
+// ── Cloud sync button ─────────────────────────────────────────────────────
+
+/// Toolbar button for GuDesk Cloud: shows login or sync state.
+class _CloudSyncButton extends StatelessWidget {
+  const _CloudSyncButton();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Get.isRegistered<GdCloudController>(tag: GdCloudController.tag)) {
+      return const SizedBox.shrink();
+    }
+    final ctrl = Get.find<GdCloudController>(tag: GdCloudController.tag);
+    return Obx(() {
+      final loggedIn  = ctrl.isLoggedIn.value;
+      final syncing   = ctrl.isSyncing.value;
+      final hasError  = ctrl.syncError.value != null;
+      final lastSync  = ctrl.lastSyncedAt.value;
+
+      String tooltip;
+      if (!loggedIn) {
+        tooltip = 'Sign in to GuDesk Cloud';
+      } else if (syncing) {
+        tooltip = 'Syncing directory…';
+      } else if (hasError) {
+        tooltip = 'Sync error — tap to retry';
+      } else if (lastSync != null) {
+        tooltip = 'Cloud: ${ctrl.currentOrg.value?.name ?? ''}'
+            ' · Synced ${_ago(lastSync)} · Tap to refresh';
+      } else {
+        tooltip = 'Cloud: ${ctrl.currentOrg.value?.name ?? ''} · Tap to sync';
+      }
+
+      return Tooltip(
+        message: tooltip,
+        child: loggedIn
+            ? _syncedButton(context, ctrl, syncing, hasError)
+            : IconButton(
+                icon: const Icon(Icons.cloud_off_outlined, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () => _openLogin(context),
+              ),
+      );
+    });
+  }
+
+  Widget _syncedButton(
+    BuildContext context,
+    GdCloudController ctrl,
+    bool syncing,
+    bool hasError,
+  ) {
+    return PopupMenuButton<_CloudAction>(
+      icon: syncing
+          ? const SizedBox(
+              width: 20, height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : Icon(
+              hasError ? Icons.cloud_off : Icons.cloud_done_outlined,
+              size: 20,
+              color: hasError ? Colors.orange : Colors.green,
+            ),
+      padding: EdgeInsets.zero,
+      iconSize: 20,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      onSelected: (action) {
+        switch (action) {
+          case _CloudAction.sync:
+            ctrl.syncDirectory();
+          case _CloudAction.logout:
+            _confirmLogout(context, ctrl);
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: _CloudAction.sync,
+          child: Row(children: const [
+            Icon(Icons.sync, size: 18),
+            SizedBox(width: 8),
+            Text('Refresh directory'),
+          ]),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: _CloudAction.logout,
+          child: Row(children: [
+            Icon(Icons.logout, size: 18,
+                color: Theme.of(context).colorScheme.error),
+            const SizedBox(width: 8),
+            Text('Sign out',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.error)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  void _openLogin(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const GdLoginPage()),
+    );
+  }
+
+  void _confirmLogout(BuildContext context, GdCloudController ctrl) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out of GuDesk Cloud?'),
+        content: const Text(
+            'Your local directory will remain intact. Cloud contacts will no longer sync.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () { Navigator.pop(ctx); ctrl.logout(); },
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _ago(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60)  return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60)  return '${diff.inMinutes}m ago';
+    return '${diff.inHours}h ago';
+  }
+}
+
+enum _CloudAction { sync, logout }
 
 /// Small icon showing WebSocket / poll status, with settings on tap.
 class _StatusIndicator extends StatelessWidget {

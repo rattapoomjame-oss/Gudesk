@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../chat/chat_history_page.dart';
 import '../directory/directory_controller.dart';
 import '../directory/models.dart';
 import '../status/formatting.dart';
@@ -44,6 +45,17 @@ class _GdDeviceDetailPageState extends State<GdDeviceDetailPage> {
       appBar: AppBar(
         title: Text(_device.displayName),
         actions: [
+          Tooltip(
+            message: 'Chat history',
+            child: IconButton(
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => GdChatHistoryPage(device: _device)),
+              ),
+            ),
+          ),
           if (_notesDirty)
             TextButton.icon(
               icon: const Icon(Icons.save),

@@ -22,7 +22,7 @@ class GdDb {
     final path = p.join(dir.path, 'gudesk.db');
     return openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -69,6 +69,9 @@ class GdDb {
         hostname     TEXT    NOT NULL DEFAULT '',
         os_detail    TEXT    NOT NULL DEFAULT '',
         ip_last      TEXT    NOT NULL DEFAULT '',
+        password     TEXT    NOT NULL DEFAULT '',
+        cloud_id     TEXT,
+        group_name   TEXT    NOT NULL DEFAULT '',
         created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
         updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
       )
@@ -99,6 +102,19 @@ class GdDb {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_recordings_sess  ON recordings(session_id)');
     // v2: unique guard so duplicate file scans are idempotent
     await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_recordings_filename ON recordings(filename)');
+    // v4: chat message history
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        remote_id  TEXT    NOT NULL,
+        direction  TEXT    NOT NULL CHECK(direction IN ('outgoing', 'incoming')),
+        sender     TEXT    NOT NULL DEFAULT '',
+        text       TEXT    NOT NULL,
+        created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_remote_id  ON chat_messages(remote_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_created_at ON chat_messages(created_at)');
   }
 
   static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -109,6 +125,25 @@ class GdDb {
       await db.execute("ALTER TABLE devices ADD COLUMN hostname  TEXT NOT NULL DEFAULT ''");
       await db.execute("ALTER TABLE devices ADD COLUMN os_detail TEXT NOT NULL DEFAULT ''");
       await db.execute("ALTER TABLE devices ADD COLUMN ip_last   TEXT NOT NULL DEFAULT ''");
+    }
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          remote_id  TEXT    NOT NULL,
+          direction  TEXT    NOT NULL CHECK(direction IN ('outgoing', 'incoming')),
+          sender     TEXT    NOT NULL DEFAULT '',
+          text       TEXT    NOT NULL,
+          created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_remote_id  ON chat_messages(remote_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_created_at ON chat_messages(created_at)');
+    }
+    if (oldVersion < 5) {
+      await db.execute("ALTER TABLE devices ADD COLUMN password   TEXT NOT NULL DEFAULT ''");
+      await db.execute('ALTER TABLE devices ADD COLUMN cloud_id   TEXT');
+      await db.execute("ALTER TABLE devices ADD COLUMN group_name TEXT NOT NULL DEFAULT ''");
     }
   }
 
