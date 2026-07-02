@@ -157,6 +157,14 @@ jobs:
 
       - name: Build Flutter macOS
         working-directory: flutter
+        # cargo builds a single-arch (arm64) dylib for this runner; Xcode's
+        # default ARCHS_STANDARD is universal (arm64+x86_64), so without
+        # pinning ARCHS the linker looks for an x86_64 slice that doesn't
+        # exist ("Undefined symbols for architecture x86_64"). Same fix
+        # build.py already applies locally (see build.py:414-419).
+        env:
+          FLUTTER_XCODE_ARCHS: arm64
+          FLUTTER_XCODE_ONLY_ACTIVE_ARCH: "YES"
         run: flutter build macos --release
 
       - name: Create DMG
@@ -230,6 +238,11 @@ jobs:
 
       - name: Build Flutter macOS
         working-directory: flutter
+        # See matching comment in build-macos-arm: pin ARCHS to this
+        # runner's single-arch (x86_64) Rust dylib.
+        env:
+          FLUTTER_XCODE_ARCHS: x86_64
+          FLUTTER_XCODE_ONLY_ACTIVE_ARCH: "YES"
         run: flutter build macos --release
 
       - name: Create DMG
