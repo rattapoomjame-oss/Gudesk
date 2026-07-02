@@ -184,7 +184,11 @@ jobs:
   build-macos-x64:
     name: macOS x86_64
     needs: [generate-bridge]
-    runs-on: macos-13           # Intel runner
+    # macos-13 sat queued for 1.5+ hours with zero capacity. The proven
+    # upstream flutter-build.yml already moved its Intel job to
+    # macos-15-intel for the same reason — macos-13 runners are being
+    # phased out on GitHub-hosted infra.
+    runs-on: macos-15-intel     # Intel runner
     steps:
       - uses: actions/checkout@v4
         with:
