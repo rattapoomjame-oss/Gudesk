@@ -12,7 +12,10 @@
 #define AppName        "GuDesk"
 #define AppPublisher   "GuDesk Team"
 #define AppURL         "https://gudesk.app"
-#define AppExeName     "gudesk.exe"
+; flutter/windows/CMakeLists.txt sets BINARY_NAME to "rustdesk" (unchanged
+; by the GuDesk rebrand, which only touched app-facing name/UI), so that's
+; the actual compiled file name — not "gudesk.exe".
+#define AppExeName     "rustdesk.exe"
 ; Paths are resolved relative to this script's directory
 ; (gudesk\build\windows\), which is 3 levels below the repo root — not 4.
 ; The original 4-up paths silently resolved to the parent of the checkout
