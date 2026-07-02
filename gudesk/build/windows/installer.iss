@@ -13,8 +13,14 @@
 #define AppPublisher   "GuDesk Team"
 #define AppURL         "https://gudesk.app"
 #define AppExeName     "gudesk.exe"
-#define BuildDir       "..\..\..\..\flutter\build\windows\x64\runner\Release"
-#define OutputDir      "..\..\..\..\target"
+; Paths are resolved relative to this script's directory
+; (gudesk\build\windows\), which is 3 levels below the repo root — not 4.
+; The original 4-up paths silently resolved to the parent of the checkout
+; (D:\a\Gudesk\ instead of D:\a\Gudesk\Gudesk\), which is why OutputDir
+; landed one level outside the repo and BuildDir pointed at a
+; nonexistent Flutter build output on first run.
+#define BuildDir       "..\..\..\flutter\build\windows\x64\runner\Release"
+#define OutputDir      "..\..\..\target"
 
 [Setup]
 AppId={{A3F7C2B1-4E8D-4F9A-BB12-2C9E7D3F1A45}
@@ -29,7 +35,9 @@ DefaultGroupName={#AppName}
 AllowNoIcons=yes
 OutputDir={#OutputDir}
 OutputBaseFilename=GuDesk-Setup-{#AppVersion}-x86_64
-SetupIconFile={#BuildDir}\data\flutter_assets\assets\icon.ico
+; flutter_assets only ships icon.svg (no .ico); use the actual compiled
+; app icon that's already checked into the repo.
+SetupIconFile=..\..\..\flutter\windows\runner\resources\app_icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
