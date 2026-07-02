@@ -12,6 +12,12 @@ env:
   # this session (many successful `flutter build macos --release` runs).
   FLUTTER_VERSION: '3.44.4'
   RUST_TOOLCHAIN: stable
+  # Same pinned commit as .github/workflows/flutter-build.yml (the proven,
+  # working upstream workflow) — this custom release workflow never actually
+  # had vcpkg set up at all (cargo build failed with "Couldn't find
+  # VCPKG_ROOT" / homebrew-fallback opus not found on every platform, since
+  # it had apparently never been run successfully before).
+  VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
 
 jobs:
   # ── macOS (aarch64) ────────────────────────────────────────────────────────
@@ -35,6 +41,17 @@ jobs:
 
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
+
+      - name: Setup vcpkg with Github Actions binary cache
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+
+      - name: Install vcpkg dependencies
+        run: |
+          $VCPKG_ROOT/vcpkg install --triplet arm64-osx --x-install-root="$VCPKG_ROOT/installed"
+        shell: bash
 
       - name: Install Flutter
         uses: subosito/flutter-action@v2
@@ -88,6 +105,17 @@ jobs:
 
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
+
+      - name: Setup vcpkg with Github Actions binary cache
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+
+      - name: Install vcpkg dependencies
+        run: |
+          $VCPKG_ROOT/vcpkg install --triplet x64-osx --x-install-root="$VCPKG_ROOT/installed"
+        shell: bash
 
       - name: Install Flutter
         uses: subosito/flutter-action@v2
@@ -145,6 +173,20 @@ jobs:
 
       - name: Install LLVM / nasm
         run: choco install llvm nasm -y
+
+      - name: Setup vcpkg with Github Actions binary cache
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: C:\vcpkg
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+
+      - name: Install vcpkg dependencies
+        env:
+          VCPKG_DEFAULT_HOST_TRIPLET: x64-windows-static
+        run: |
+          $VCPKG_ROOT/vcpkg install --triplet x64-windows-static --x-install-root="$VCPKG_ROOT/installed"
+        shell: bash
 
       - name: Install Flutter
         uses: subosito/flutter-action@v2
