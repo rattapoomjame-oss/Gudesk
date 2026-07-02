@@ -212,8 +212,16 @@ jobs:
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
 
-      - name: Install nasm
-        run: brew install nasm
+      - name: Install NASM
+        run: |
+          # `brew install nasm` gives NASM 3.x, which vcpkg's aom port
+          # rejects for x86 builds ("Unsupported nasm: multipass
+          # optimization not supported"). Pin the 2.16.03 release instead,
+          # matching the documented requirement in flutter-build.yml.
+          wget https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/macosx/nasm-2.16.03-macosx.zip
+          unzip nasm-2.16.03-macosx.zip
+          sudo cp nasm-2.16.03/nasm /usr/local/bin/nasm
+          nasm --version
 
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@v11
