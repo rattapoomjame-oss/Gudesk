@@ -96,11 +96,39 @@ class GdCloudApi {
     return body['upserted'] as int? ?? 0;
   }
 
+  /// Saves a device's connection password back to its Cloud contact record
+  /// (the "remember password" flow) — org-wide, syncs to every member.
+  Future<void> updateContactPassword(
+    String accessToken,
+    String contactId,
+    String password,
+  ) async {
+    await _patchAuth(
+      '$_v1/contacts/$contactId',
+      accessToken,
+      {'password': password},
+    );
+  }
+
   // ── Me ────────────────────────────────────────────────────────────────────
 
   Future<GdCloudUser> getMe(String accessToken) async {
     final body = await _getAuth('$_v1/auth/me', accessToken);
     return GdCloudUser.fromJson(body);
+  }
+
+  // ── Organization ─────────────────────────────────────────────────────────
+
+  /// Fetches the org row (raw JSON — snake_case columns, e.g.
+  /// `elevated_access_enabled`), as returned directly by the backend.
+  Future<Map<String, dynamic>> getOrg(String accessToken, String orgId) async {
+    return _getAuth('$_v1/orgs/$orgId', accessToken);
+  }
+
+  /// Best-effort audit record that a connection was made using an
+  /// elevated-access auto-filled password. Never blocks the connection.
+  Future<void> logConnectionUse(String accessToken, String contactId) async {
+    await _postAuth('$_v1/contacts/$contactId/connection-log', accessToken, {});
   }
 
   // ── Internals ─────────────────────────────────────────────────────────────
@@ -128,6 +156,22 @@ class GdCloudApi {
     Map<String, dynamic> data,
   ) async {
     final resp = await _client.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+    return _parseResponse(resp);
+  }
+
+  Future<Map<String, dynamic>> _patchAuth(
+    String url,
+    String token,
+    Map<String, dynamic> data,
+  ) async {
+    final resp = await _client.patch(
       Uri.parse(url),
       headers: {
         'Content-Type': 'application/json',

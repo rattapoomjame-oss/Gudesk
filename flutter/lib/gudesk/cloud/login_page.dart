@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
 
 import 'cloud_controller.dart';
-import 'register_page.dart';
+
+const _kRememberedEmail = 'gd-cloud-remembered-email';
 
 class GdLoginPage extends StatefulWidget {
   const GdLoginPage({super.key});
@@ -18,7 +20,18 @@ class _GdLoginPageState extends State<GdLoginPage> {
   final _passCtrl   = TextEditingController();
   bool  _loading    = false;
   bool  _obscure    = true;
+  bool  _rememberEmail = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final remembered = bind.getLocalFlutterOption(k: _kRememberedEmail);
+    if (remembered.isNotEmpty) {
+      _emailCtrl.text = remembered;
+      _rememberEmail = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -43,6 +56,11 @@ class _GdLoginPageState extends State<GdLoginPage> {
 
     if (!mounted) return;
     if (err == null) {
+      await bind.setLocalFlutterOption(
+        k: _kRememberedEmail,
+        v: _rememberEmail ? _emailCtrl.text.trim() : '',
+      );
+      if (!mounted) return;
       Navigator.of(context).pop(true);
     } else {
       setState(() { _loading = false; _error = err; });
@@ -131,6 +149,16 @@ class _GdLoginPageState extends State<GdLoginPage> {
                         (v == null || v.isEmpty) ? 'Required' : null,
                   ),
 
+                  // Remember email
+                  CheckboxListTile(
+                    value: _rememberEmail,
+                    onChanged: (v) => setState(() => _rememberEmail = v ?? false),
+                    title: const Text('Remember my email', style: TextStyle(fontSize: 14)),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+
                   // Error banner
                   if (_error != null) ...[
                     const SizedBox(height: 12),
@@ -164,19 +192,12 @@ class _GdLoginPageState extends State<GdLoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Register link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an organization? "),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                              builder: (_) => const GdRegisterPage()),
-                        ),
-                        child: const Text('Create one'),
-                      ),
-                    ],
+                  // Self-service org creation is disabled — an admin creates
+                  // accounts via the GuDesk Cloud web dashboard (Team page).
+                  const Text(
+                    "Don't have an account? Ask your GuDesk admin to add you.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                 ],
               ),

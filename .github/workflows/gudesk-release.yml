@@ -6,7 +6,11 @@ on:
       - 'gudesk-v[0-9]+.[0-9]+.[0-9]+'
 
 env:
-  FLUTTER_VERSION: '3.24.5'
+  # Bumped from 3.24.5 — the GuDesk redesign work uses Flutter 3.27+ theming
+  # APIs (DialogThemeData/TabBarThemeData) plus extended_text 15.0.2 and
+  # google_fonts ^8.1.0, all verified built/running against 3.44.4 locally
+  # this session (many successful `flutter build macos --release` runs).
+  FLUTTER_VERSION: '3.44.4'
   RUST_TOOLCHAIN: stable
 
 jobs:

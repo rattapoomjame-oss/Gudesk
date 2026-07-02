@@ -29,6 +29,11 @@ class GdCloudController extends GetxController {
   final lastSyncedAt  = Rxn<DateTime>();
   final currentUser   = Rxn<GdCloudUser>();
   final currentOrg    = Rxn<GdCloudOrg>();
+  // Org-level "Elevated Access Mode" — toggled by an admin on the web
+  // dashboard, never from this app. When true (and the current user is
+  // it_manager/super_admin), the directory auto-fills each org-enrolled
+  // device's stored password on connect instead of asking for it.
+  final elevatedAccessEnabled = false.obs;
 
   GdCloudApi? _api;
 
@@ -75,6 +80,49 @@ class GdCloudController extends GetxController {
     if (lastSync.isNotEmpty) {
       lastSyncedAt.value = DateTime.tryParse(lastSync);
     }
+
+    // Best-effort, non-blocking — restoring a session shouldn't wait on this.
+    _refreshElevatedAccess();
+  }
+
+  /// Refreshes [elevatedAccessEnabled] from the org row. Best-effort: on
+  /// failure, leaves the last-known value in place rather than assuming off,
+  /// since a transient network error shouldn't silently disable a policy
+  /// the admin explicitly turned on.
+  Future<void> _refreshElevatedAccess() async {
+    if (_api == null) return;
+    final user = currentUser.value;
+    if (user == null || user.orgId.isEmpty) return;
+    try {
+      final token = bind.getLocalFlutterOption(k: _kAccessToken);
+      final org = await _api!.getOrg(token, user.orgId);
+      elevatedAccessEnabled.value = org['elevated_access_enabled'] == true;
+    } catch (_) {}
+  }
+
+  /// Best-effort audit log of a connection made using an elevated-access
+  /// auto-filled password. Never throws — must not block a connection.
+  Future<void> logConnectionUse(String contactId) async {
+    if (_api == null) return;
+    try {
+      final token = bind.getLocalFlutterOption(k: _kAccessToken);
+      await _api!.logConnectionUse(token, contactId);
+    } catch (_) {}
+  }
+
+  /// Saves a device's password back to its Cloud contact record so it's
+  /// remembered org-wide. Returns true on success (unlike the audit log
+  /// above, failures here are surfaced — the user explicitly asked to
+  /// remember it, so silently dropping that would be misleading).
+  Future<bool> updateContactPassword(String contactId, String password) async {
+    if (_api == null) return false;
+    try {
+      final token = bind.getLocalFlutterOption(k: _kAccessToken);
+      await _api!.updateContactPassword(token, contactId, password);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _persistSession(GdCloudSession session, String cloudUrl) async {
@@ -117,6 +165,7 @@ class GdCloudController extends GetxController {
 
       // Sync directory immediately after login
       await syncDirectory();
+      await _refreshElevatedAccess();
       return null;
     } on GdApiError catch (e) {
       return e.message;
@@ -171,6 +220,7 @@ class GdCloudController extends GetxController {
     isLoggedIn.value   = false;
     lastSyncedAt.value = null;
     syncError.value    = null;
+    elevatedAccessEnabled.value = false;
 
     await _clearSession();
   }
@@ -201,6 +251,7 @@ class GdCloudController extends GetxController {
       await bind.setLocalFlutterOption(
         k: _kLastSync, v: syncedAt,
       );
+      await _refreshElevatedAccess();
     } on GdApiError catch (e) {
       syncError.value = e.message;
     } catch (e) {

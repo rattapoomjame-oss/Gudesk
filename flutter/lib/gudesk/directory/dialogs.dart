@@ -1,6 +1,8 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hbb/common.dart';
 
 import 'directory_controller.dart';
 import 'models.dart';
@@ -78,7 +80,8 @@ Future<void> showDeleteDirectoryDialog(
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: Colors.red),
+          style: FilledButton.styleFrom(
+              backgroundColor: MyTheme.color(ctx).statusError),
           onPressed: () async {
             await ctrl.deleteDirectory(dir);
             if (ctx.mounted) Navigator.pop(ctx);
@@ -180,7 +183,7 @@ Future<void> showEditDeviceDialog(
                   maxLines: 3,
                 ),
                 const SizedBox(height: 12),
-                const Text('Tags', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                const Text('Tags', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -213,7 +216,7 @@ Future<void> showEditDeviceDialog(
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.add, size: 20),
+                      icon: const Icon(CupertinoIcons.add, size: 20),
                       onPressed: () {
                         final tag = tagCtrl.text.trim();
                         if (tag.isNotEmpty && !tags.contains(tag)) {
@@ -368,7 +371,8 @@ Future<void> showDeleteDeviceDialog(
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: Colors.red),
+          style: FilledButton.styleFrom(
+              backgroundColor: MyTheme.color(ctx).statusError),
           onPressed: () async {
             await ctrl.deleteDevice(device);
             if (ctx.mounted) Navigator.pop(ctx);

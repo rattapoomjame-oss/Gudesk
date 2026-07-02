@@ -1,10 +1,46 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common.dart';
 import 'package:get/get.dart';
 
+import '../cloud/cloud_controller.dart';
+import 'connect_dialog.dart';
 import 'device_card.dart';
 import 'dialogs.dart';
 import 'directory_controller.dart';
 import 'models.dart';
+
+/// Connects to [device].
+///
+/// When GuDesk Cloud is logged in, the org has "Elevated Access Mode" on
+/// (an admin-only toggle in the web dashboard), the current user is
+/// it_manager/super_admin, and this device is one already enrolled in the
+/// org's directory (has a `cloudId`) with a stored password: connects
+/// straight away with that password, no dialog. This never changes what
+/// happens on the *target* device's own screen — that's controlled entirely
+/// by that device's own local approve-mode setting.
+///
+/// Otherwise, shows GuDesk's own connect dialog (password entry + optional
+/// "remember this password" — see connect_dialog.dart) rather than jumping
+/// straight to RustDesk's generic connect flow.
+void _connectToDevice(BuildContext context, GdDevice device) {
+  if (Get.isRegistered<GdCloudController>(tag: GdCloudController.tag)) {
+    final cloud = Get.find<GdCloudController>(tag: GdCloudController.tag);
+    final user = cloud.currentUser.value;
+    if (cloud.isLoggedIn.value &&
+        cloud.elevatedAccessEnabled.value &&
+        (user?.isManager ?? false) &&
+        device.cloudId != null &&
+        device.password.isNotEmpty) {
+      connect(context, device.remoteId,
+          password: device.password, isSharedPassword: true);
+      cloud.logConnectionUse(device.cloudId!);
+      return;
+    }
+  }
+
+  showConnectDialog(context, device);
+}
 
 class DirectoryTree extends StatelessWidget {
   const DirectoryTree({super.key});
@@ -53,12 +89,13 @@ class DirectoryTree extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.folder_open,
+                    Icon(CupertinoIcons.folder_open,
                         size: 48, color: Colors.grey.shade400),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Text('No devices yet',
-                        style: TextStyle(color: Colors.grey.shade500)),
-                    const SizedBox(height: 8),
+                        style: TextStyle(
+                            fontSize: 15, color: Colors.grey.shade500)),
+                    const SizedBox(height: 12),
                     FilledButton.tonal(
                       onPressed: () => showAddDeviceDialog(context),
                       child: const Text('Add device'),
@@ -74,18 +111,8 @@ class DirectoryTree extends StatelessWidget {
     });
   }
 
-  void _connectDevice(BuildContext context, GdDevice device) {
-    // Launch connection via RustDesk's existing mechanism
-    // The remote ID is passed to the existing connect flow
-    final id = device.remoteId;
-    final ffi = Get.isRegistered(tag: 'main') ? Get.find(tag: 'main') : null;
-    if (ffi != null) {
-      // Use RustDesk's existing connect call if available
-      try {
-        (ffi as dynamic).connect(id: id);
-      } catch (_) {}
-    }
-  }
+  void _connectDevice(BuildContext context, GdDevice device) =>
+      _connectToDevice(context, device);
 }
 
 // ── Directory node (recursive) ────────────────────────────────────────────
@@ -112,30 +139,30 @@ class _DirectoryNode extends StatelessWidget {
             onSecondaryTapUp: (d) => _showFolderMenu(context, d.globalPosition),
             child: InkWell(
               onTap: () => ctrl.toggleExpand(directory.id!),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(MyTheme.radiusSmall),
               child: Container(
-                height: 34,
-                padding: EdgeInsets.only(left: 8.0 + depth * 16.0, right: 4),
+                height: 38,
+                padding: EdgeInsets.only(left: 8.0 + depth * 16.0, right: 6),
                 child: Row(
                   children: [
                     Icon(
-                      expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
-                      size: 16,
+                      expanded ? CupertinoIcons.chevron_down : CupertinoIcons.chevron_right,
+                      size: 14,
                       color: (children.isEmpty && devices.isEmpty)
                           ? Colors.transparent
-                          : null,
+                          : Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Icon(
-                      expanded ? Icons.folder_open : Icons.folder,
+                      expanded ? CupertinoIcons.folder_open : CupertinoIcons.folder,
                       size: 17,
-                      color: const Color(0xFFFFA726),
+                      color: Theme.of(context).colorScheme.secondary,
                     ),
-                    const SizedBox(width: 7),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         directory.name,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -194,16 +221,16 @@ class _DirectoryNode extends StatelessWidget {
           value: _FolderAction.addDevice,
           child: ListTile(
             dense: true,
-            leading: const Icon(Icons.add_circle_outline, size: 18),
-            title: const Text('Add device here'),
+            leading: const Icon(CupertinoIcons.add_circled, size: 18),
+            title: const Text('Add device here', style: TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
           value: _FolderAction.newSubfolder,
           child: ListTile(
             dense: true,
-            leading: const Icon(Icons.create_new_folder_outlined, size: 18),
-            title: const Text('New sub-folder'),
+            leading: const Icon(CupertinoIcons.folder_badge_plus, size: 18),
+            title: const Text('New sub-folder', style: TextStyle(fontSize: 15)),
           ),
         ),
         const PopupMenuDivider(),
@@ -211,8 +238,8 @@ class _DirectoryNode extends StatelessWidget {
           value: _FolderAction.rename,
           child: ListTile(
             dense: true,
-            leading: const Icon(Icons.drive_file_rename_outline, size: 18),
-            title: const Text('Rename'),
+            leading: const Icon(CupertinoIcons.pencil, size: 18),
+            title: const Text('Rename', style: TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
@@ -220,7 +247,7 @@ class _DirectoryNode extends StatelessWidget {
           child: ListTile(
             dense: true,
             leading: const Icon(Icons.unfold_more, size: 18),
-            title: const Text('Expand all'),
+            title: const Text('Expand all', style: TextStyle(fontSize: 15)),
           ),
         ),
         const PopupMenuDivider(),
@@ -228,8 +255,11 @@ class _DirectoryNode extends StatelessWidget {
           value: _FolderAction.delete,
           child: ListTile(
             dense: true,
-            leading: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-            title: const Text('Delete folder', style: TextStyle(color: Colors.red)),
+            leading: Icon(CupertinoIcons.trash,
+                size: 18, color: MyTheme.color(context).statusError),
+            title: Text('Delete folder',
+                style: TextStyle(
+                    fontSize: 15, color: MyTheme.color(context).statusError)),
           ),
         ),
       ],
@@ -251,14 +281,8 @@ class _DirectoryNode extends StatelessWidget {
     }
   }
 
-  void _connectDevice(BuildContext context, GdDevice device) {
-    final ffi = Get.isRegistered(tag: 'main') ? Get.find(tag: 'main') : null;
-    if (ffi != null) {
-      try {
-        (ffi as dynamic).connect(id: device.remoteId);
-      } catch (_) {}
-    }
-  }
+  void _connectDevice(BuildContext context, GdDevice device) =>
+      _connectToDevice(context, device);
 }
 
 // ── Folder badge ──────────────────────────────────────────────────────────
@@ -281,7 +305,7 @@ class _FolderBadge extends StatelessWidget {
       child: Text(
         '$total',
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 12,
           color: Theme.of(context).colorScheme.onSecondaryContainer,
           fontWeight: FontWeight.w600,
         ),
@@ -315,12 +339,12 @@ class _FolderActionsState extends State<_FolderActions> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _iconBtn(
-              icon: Icons.add,
+              icon: CupertinoIcons.add,
               tooltip: 'Add device',
               onTap: () => showAddDeviceDialog(context, directoryId: widget.directory.id),
             ),
             _iconBtn(
-              icon: Icons.create_new_folder_outlined,
+              icon: CupertinoIcons.folder_badge_plus,
               tooltip: 'New sub-folder',
               onTap: () => showCreateDirectoryDialog(context,
                   parentId: widget.directory.id, parentName: widget.directory.name),
@@ -366,7 +390,7 @@ class _UnassignedHeader extends StatelessWidget {
           Text(
             'Unassigned',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: Colors.grey.shade500,
               letterSpacing: 0.5,
@@ -375,7 +399,7 @@ class _UnassignedHeader extends StatelessWidget {
           const Spacer(),
           Text(
             '$count',
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
           ),
           const SizedBox(width: 4),
         ],

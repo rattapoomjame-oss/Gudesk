@@ -1,4 +1,8 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common.dart';
 import 'package:get/get.dart';
 
 import '../cloud/cloud_controller.dart';
@@ -62,95 +66,108 @@ class _Toolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Row(
-        children: [
-          // Search
-          Expanded(
-            child: Obx(() => TextField(
-                  onChanged: (v) => ctrl.searchQuery.value = v,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: 'Search devices, tags…',
-                    hintStyle: const TextStyle(fontSize: 12),
-                    prefixIcon: const Icon(Icons.search, size: 16),
-                    suffixIcon: ctrl.searchQuery.value.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 14),
-                            onPressed: () => ctrl.searchQuery.value = '',
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 6, horizontal: 8),
-                  ),
-                  style: const TextStyle(fontSize: 12),
-                )),
-          ),
-          const SizedBox(width: 6),
-          // New folder
-          Tooltip(
-            message: 'New root folder',
-            child: IconButton(
-              icon: const Icon(Icons.create_new_folder_outlined, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: () => showCreateDirectoryDialog(context),
-            ),
-          ),
-          // Add device
-          Tooltip(
-            message: 'Add device',
-            child: IconButton(
-              icon: const Icon(Icons.add_circle_outline, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: () => showAddDeviceDialog(context),
-            ),
-          ),
-          // Expand / collapse all
-          Obx(() {
-            final allExpanded = ctrl.directories.isNotEmpty &&
-                ctrl.directories.every((d) => ctrl.isExpanded(d.id!));
-            return Tooltip(
-              message: allExpanded ? 'Collapse all' : 'Expand all',
-              child: IconButton(
-                icon: Icon(
-                  allExpanded ? Icons.unfold_less : Icons.unfold_more,
-                  size: 20,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          color: (isDark ? const Color(0xFF2C2C2E) : Colors.white)
+              .withOpacity(0.72),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              // Search
+              Expanded(
+                child: Obx(() => TextField(
+                      onChanged: (v) => ctrl.searchQuery.value = v,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: 'Search devices, tags…',
+                        hintStyle: const TextStyle(fontSize: 14),
+                        prefixIcon:
+                            const Icon(CupertinoIcons.search, size: 18),
+                        suffixIcon: ctrl.searchQuery.value.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(CupertinoIcons.clear_circled,
+                                    size: 16),
+                                onPressed: () => ctrl.searchQuery.value = '',
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(MyTheme.radiusMedium),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 10),
+                      ),
+                      style: const TextStyle(fontSize: 14),
+                    )),
+              ),
+              const SizedBox(width: 10),
+              // New folder
+              Tooltip(
+                message: 'New root folder',
+                child: IconButton(
+                  icon: const Icon(CupertinoIcons.folder_badge_plus, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  onPressed: () => showCreateDirectoryDialog(context),
                 ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: allExpanded ? ctrl.collapseAll : ctrl.expandAll,
               ),
-            );
-          }),
-          // Tag filter
-          _TagFilterButton(ctrl: ctrl),
-          // Recordings browser
-          Tooltip(
-            message: 'Session recordings',
-            child: IconButton(
-              icon: const Icon(Icons.video_library_outlined, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const RecordingsPage()),
+              // Add device
+              Tooltip(
+                message: 'Add device',
+                child: IconButton(
+                  icon: const Icon(CupertinoIcons.add_circled, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  onPressed: () => showAddDeviceDialog(context),
+                ),
               ),
-            ),
+              // Expand / collapse all
+              Obx(() {
+                final allExpanded = ctrl.directories.isNotEmpty &&
+                    ctrl.directories.every((d) => ctrl.isExpanded(d.id!));
+                return Tooltip(
+                  message: allExpanded ? 'Collapse all' : 'Expand all',
+                  child: IconButton(
+                    icon: Icon(
+                      allExpanded ? Icons.unfold_less : Icons.unfold_more,
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 36, minHeight: 36),
+                    onPressed: allExpanded ? ctrl.collapseAll : ctrl.expandAll,
+                  ),
+                );
+              }),
+              // Tag filter
+              _TagFilterButton(ctrl: ctrl),
+              // Recordings browser
+              Tooltip(
+                message: 'Session recordings',
+                child: IconButton(
+                  icon: const Icon(CupertinoIcons.videocam, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const RecordingsPage()),
+                  ),
+                ),
+              ),
+              // Update badge (hidden when idle)
+              const GdUpdateBadge(),
+              // Cloud sync
+              const _CloudSyncButton(),
+              // Status / connection indicator
+              _StatusIndicator(),
+            ],
           ),
-          // Update badge (hidden when idle)
-          const GdUpdateBadge(),
-          // Cloud sync
-          const _CloudSyncButton(),
-          // Status / connection indicator
-          _StatusIndicator(),
-        ],
+        ),
       ),
     );
   }
@@ -176,7 +193,7 @@ class _TagFilterButton extends StatelessWidget {
             isLabelVisible: active,
             backgroundColor: Theme.of(context).colorScheme.primary,
             child: Icon(
-              Icons.label_outline,
+              CupertinoIcons.tag,
               size: 20,
               color: active
                   ? Theme.of(context).colorScheme.primary
@@ -184,7 +201,7 @@ class _TagFilterButton extends StatelessWidget {
             ),
           ),
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           onPressed: active
               ? () => ctrl.tagFilter.value = ''
               : () => _showTagPicker(context),
@@ -214,9 +231,9 @@ class _TagFilterButton extends StatelessWidget {
               onPressed: () => Navigator.pop(ctx, tag),
               child: Row(
                 children: [
-                  const Icon(Icons.label, size: 16),
+                  const Icon(CupertinoIcons.tag_fill, size: 16),
                   const SizedBox(width: 8),
-                  Text(tag),
+                  Text(tag, style: const TextStyle(fontSize: 15)),
                 ],
               ),
             ),
@@ -264,9 +281,9 @@ class _CloudSyncButton extends StatelessWidget {
         child: loggedIn
             ? _syncedButton(context, ctrl, syncing, hasError)
             : IconButton(
-                icon: const Icon(Icons.cloud_off_outlined, size: 20),
+                icon: const Icon(CupertinoIcons.cloud, size: 20),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 onPressed: () => _openLogin(context),
               ),
       );
@@ -285,13 +302,15 @@ class _CloudSyncButton extends StatelessWidget {
               width: 20, height: 20,
               child: CircularProgressIndicator(strokeWidth: 2))
           : Icon(
-              hasError ? Icons.cloud_off : Icons.cloud_done_outlined,
+              hasError ? CupertinoIcons.cloud : CupertinoIcons.cloud_fill,
               size: 20,
-              color: hasError ? Colors.orange : Colors.green,
+              color: hasError
+                  ? MyTheme.color(context).statusWarning
+                  : MyTheme.color(context).statusOnline,
             ),
       padding: EdgeInsets.zero,
       iconSize: 20,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
       onSelected: (action) {
         switch (action) {
           case _CloudAction.sync:
@@ -304,21 +323,21 @@ class _CloudSyncButton extends StatelessWidget {
         PopupMenuItem(
           value: _CloudAction.sync,
           child: Row(children: const [
-            Icon(Icons.sync, size: 18),
+            Icon(CupertinoIcons.refresh, size: 18),
             SizedBox(width: 8),
-            Text('Refresh directory'),
+            Text('Refresh directory', style: TextStyle(fontSize: 15)),
           ]),
         ),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: _CloudAction.logout,
           child: Row(children: [
-            Icon(Icons.logout, size: 18,
+            Icon(CupertinoIcons.square_arrow_right, size: 18,
                 color: Theme.of(context).colorScheme.error),
             const SizedBox(width: 8),
             Text('Sign out',
                 style: TextStyle(
-                    color: Theme.of(context).colorScheme.error)),
+                    fontSize: 15, color: Theme.of(context).colorScheme.error)),
           ]),
         ),
       ],
@@ -382,12 +401,14 @@ class _StatusIndicator extends StatelessWidget {
         message: tooltip,
         child: IconButton(
           icon: Icon(
-            wsOk ? Icons.wifi : Icons.sync,
+            wsOk ? CupertinoIcons.wifi : CupertinoIcons.refresh,
             size: 18,
-            color: wsOk ? Colors.green : Colors.grey,
+            color: wsOk
+                ? MyTheme.color(context).statusOnline
+                : MyTheme.color(context).statusOffline,
           ),
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           onPressed: () => _showStatusSettings(context, svc),
         ),
       );
@@ -413,7 +434,7 @@ class _StatusIndicator extends StatelessWidget {
             const Text(
               'GuDesk API server URL for realtime status.\n'
               'Leave empty to use HBBS polling only.',
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 12),
             TextField(

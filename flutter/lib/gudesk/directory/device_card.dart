@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common.dart';
 
 import '../chat/chat_history_page.dart';
 import '../device/device_detail_page.dart';
@@ -23,11 +25,11 @@ class GdDeviceCard extends StatelessWidget {
       onSecondaryTapUp: (d) => _showContextMenu(context, d.globalPosition),
       child: InkWell(
         onTap: onConnect,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(MyTheme.radiusSmall),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(MyTheme.radiusSmall),
             border: device.colorLabel != null
                 ? Border(
                     left: BorderSide(
@@ -41,13 +43,13 @@ class GdDeviceCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                height: 32,
+                height: 42,
                 child: Row(
                   children: [
                     _StatusDot(device.status, device.lastSeen),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _PlatformIcon(device.platform),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +57,7 @@ class GdDeviceCard extends StatelessWidget {
                         children: [
                           Text(
                             device.displayName,
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 15),
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
@@ -63,7 +65,13 @@ class GdDeviceCard extends StatelessWidget {
                                 ? device.remoteId
                                 : formatLastSeen(device.lastSeen, device.status),
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 13,
+                              // Numbers (IDs) get a slightly heavier weight +
+                              // tabular figures so they're easy to scan/compare.
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontWeight: device.alias != null
+                                  ? FontWeight.w500
+                                  : FontWeight.normal,
                               color: Theme.of(context).textTheme.bodySmall?.color,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -72,16 +80,18 @@ class GdDeviceCard extends StatelessWidget {
                       ),
                     ),
                     if (device.isPinned)
-                      const Icon(Icons.push_pin, size: 13, color: Colors.orange),
+                      Icon(CupertinoIcons.pin_fill,
+                          size: 15, color: MyTheme.color(context).statusWarning),
                     if (device.isFavorite)
-                      const Icon(Icons.star, size: 13, color: Colors.amber),
+                      const Icon(CupertinoIcons.star_fill,
+                          size: 15, color: Colors.amber),
                     _ConnectButton(device: device, onConnect: onConnect),
                   ],
                 ),
               ),
               if (device.tags.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4, left: 24),
+                  padding: const EdgeInsets.only(bottom: 6, left: 26),
                   child: _InlineTagChips(tags: device.tags),
                 ),
             ],
@@ -102,24 +112,24 @@ class GdDeviceCard extends StatelessWidget {
           value: _DeviceAction.connect,
           child: const ListTile(
             dense: true,
-            leading: Icon(Icons.desktop_windows, size: 18),
-            title: Text('Connect'),
+            leading: Icon(CupertinoIcons.desktopcomputer, size: 18),
+            title: Text('Connect', style: TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
           value: _DeviceAction.viewInfo,
           child: const ListTile(
             dense: true,
-            leading: Icon(Icons.info_outline, size: 18),
-            title: Text('Info & Notes'),
+            leading: Icon(CupertinoIcons.info, size: 18),
+            title: Text('Info & Notes', style: TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
           value: _DeviceAction.chatHistory,
           child: const ListTile(
             dense: true,
-            leading: Icon(Icons.chat_bubble_outline, size: 18),
-            title: Text('Chat history'),
+            leading: Icon(CupertinoIcons.chat_bubble, size: 18),
+            title: Text('Chat history', style: TextStyle(fontSize: 15)),
           ),
         ),
         const PopupMenuDivider(),
@@ -127,8 +137,8 @@ class GdDeviceCard extends StatelessWidget {
           value: _DeviceAction.edit,
           child: const ListTile(
             dense: true,
-            leading: Icon(Icons.edit, size: 18),
-            title: Text('Edit'),
+            leading: Icon(CupertinoIcons.pencil, size: 18),
+            title: Text('Edit', style: TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
@@ -136,7 +146,7 @@ class GdDeviceCard extends StatelessWidget {
           child: const ListTile(
             dense: true,
             leading: Icon(Icons.drive_file_move, size: 18),
-            title: Text('Move to folder'),
+            title: Text('Move to folder', style: TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
@@ -149,7 +159,7 @@ class GdDeviceCard extends StatelessWidget {
                   ? _parseColor(device.colorLabel!)
                   : Colors.grey.shade300,
             ),
-            title: const Text('Color label'),
+            title: const Text('Color label', style: TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
@@ -157,11 +167,12 @@ class GdDeviceCard extends StatelessWidget {
           child: ListTile(
             dense: true,
             leading: Icon(
-              device.isFavorite ? Icons.star : Icons.star_border,
+              device.isFavorite ? CupertinoIcons.star_fill : CupertinoIcons.star,
               size: 18,
               color: device.isFavorite ? Colors.amber : null,
             ),
-            title: Text(device.isFavorite ? 'Remove from favorites' : 'Add to favorites'),
+            title: Text(device.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                style: const TextStyle(fontSize: 15)),
           ),
         ),
         PopupMenuItem(
@@ -169,20 +180,24 @@ class GdDeviceCard extends StatelessWidget {
           child: ListTile(
             dense: true,
             leading: Icon(
-              Icons.push_pin,
+              device.isPinned ? CupertinoIcons.pin_fill : CupertinoIcons.pin,
               size: 18,
-              color: device.isPinned ? Colors.orange : null,
+              color: device.isPinned ? MyTheme.color(context).statusWarning : null,
             ),
-            title: Text(device.isPinned ? 'Unpin' : 'Pin to top'),
+            title: Text(device.isPinned ? 'Unpin' : 'Pin to top',
+                style: const TextStyle(fontSize: 15)),
           ),
         ),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: _DeviceAction.delete,
-          child: const ListTile(
+          child: ListTile(
             dense: true,
-            leading: Icon(Icons.delete_outline, size: 18, color: Colors.red),
-            title: Text('Remove', style: TextStyle(color: Colors.red)),
+            leading: Icon(CupertinoIcons.trash,
+                size: 18, color: MyTheme.color(context).statusError),
+            title: Text('Remove',
+                style: TextStyle(
+                    fontSize: 15, color: MyTheme.color(context).statusError)),
           ),
         ),
       ],
@@ -246,24 +261,25 @@ class _StatusDot extends StatelessWidget {
         height: 8,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: _color,
+          color: _color(context),
         ),
       ),
     );
   }
 
-  Color get _color {
+  Color _color(BuildContext context) {
+    final tokens = MyTheme.color(context);
     switch (status) {
       case GdDeviceStatus.online:
-        return const Color(0xFF4CAF50);
+        return tokens.statusOnline!;
       case GdDeviceStatus.busy:
-        return Colors.orange;
+        return tokens.statusWarning!;
       case GdDeviceStatus.connecting:
-        return Colors.blue;
+        return Theme.of(context).colorScheme.secondary;
       case GdDeviceStatus.offline:
-        return Colors.grey;
+        return tokens.statusOffline!;
       case GdDeviceStatus.unknown:
-        return Colors.grey.shade400;
+        return tokens.statusOffline!.withOpacity(0.5);
     }
   }
 }
@@ -314,7 +330,7 @@ class _InlineTagChips extends StatelessWidget {
                   child: Text(
                     t,
                     style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 11,
                         color: color,
                         fontWeight: FontWeight.w600),
                   ),
@@ -346,10 +362,10 @@ class _ConnectButtonState extends State<_ConnectButton> {
         duration: const Duration(milliseconds: 150),
         opacity: _hovered ? 1.0 : 0.0,
         child: IconButton(
-          icon: const Icon(Icons.play_circle_outline, size: 18),
+          icon: const Icon(CupertinoIcons.play_arrow_solid, size: 18),
           tooltip: 'Connect',
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
           onPressed: widget.onConnect,
         ),
       ),
