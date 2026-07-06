@@ -6,6 +6,14 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+# Repo default workflow token permission is read-only. A reusable workflow's
+# jobs can never exceed what the caller grants, regardless of any
+# permissions blocks declared inside flutter-build.yml itself (it has none).
+# Without this, every release-publish step (softprops/action-gh-release)
+# fails with "GitHub release failed with status: 403".
+permissions:
+  contents: write
+
 jobs:
   run-flutter-nightly-build:
     uses: ./.github/workflows/flutter-build.yml
