@@ -89,8 +89,16 @@ jobs:
           cargo install cargo-expand --version ${{ env.CARGO_EXPAND_VERSION }} --locked
           cargo install flutter_rust_bridge_codegen --version ${{ env.FLUTTER_RUST_BRIDGE_VERSION }} --features "uuid" --locked
           if [[ "${{ matrix.job.flutter-version }}" == "3.22.3" ]]; then
-            # Default Flutter 3.22.3: extended_text 14 needs a newer Dart, so downgrade for resolution.
-            sed -i -e 's/extended_text: 14.0.0/extended_text: 13.0.0/g' flutter/pubspec.yaml
+            # Default Flutter 3.22.3: extended_text and google_fonts versions pinned in
+            # pubspec.yaml need a newer Dart SDK than 3.22.3 ships, so downgrade both for
+            # resolution only (this sed never touches the committed file, just this
+            # runner's checkout — codegen doesn't care which exact versions resolve).
+            # Matched by version-agnostic regex so future pubspec.yaml bumps (e.g. the
+            # extended_text 14.0.0 -> 15.0.2 and google_fonts ^6.2.1 -> ^8.1.0 bumps made
+            # for the GuDesk redesign) don't silently stop matching like the old fixed
+            # "14.0.0" pattern did.
+            sed -i -E 's/extended_text: [0-9]+\.[0-9]+\.[0-9]+/extended_text: 13.0.0/' flutter/pubspec.yaml
+            sed -i -E 's/google_fonts: \^?[0-9]+\.[0-9]+\.[0-9]+/google_fonts: ^6.2.1/' flutter/pubspec.yaml
           else
             # Flutter 3.44 bridge for Windows arm64: match that build's source/pubspec state so the
             # generated *.freezed.dart compiles against the same Flutter/freezed it resolves.
