@@ -25,15 +25,16 @@ env:
   SCITER_ARMV7_CMAKE_VERSION: "3.29.7"
   SCITER_NASM_DEBVERSION: "2.15.05-1"
   LLVM_VERSION: "15.0.6"
-  FLUTTER_VERSION: "3.24.5"
-  ANDROID_FLUTTER_VERSION: "3.24.5"
-  # Windows arm64 only: the first stable Flutter to ship a native arm64 Windows Dart SDK +
-  # engine is 3.44. Every other platform stays on FLUTTER_VERSION (3.24.5) until Windows 7
-  # support is restored after the upstream-wide Flutter bump. The arm64 job patches the few
-  # 3.44-only source/pubspec changes on the fly (see "Patch RustDesk sources for Flutter 3.44").
-  FLUTTER_WINDOWS_ARM_VERSION: "3.44.0"
-  # for arm64 linux because official Dart SDK does not work
-  FLUTTER_ELINUX_VERSION: "3.16.9"
+  # Bumped from 3.24.5 across the whole pipeline: the committed sources (extended_text
+  # 15.0.2, DialogThemeData/TabBarThemeData, etc.) need Dart SDK >=3.7.0, which 3.24.5
+  # doesn't ship. This drops Windows 7 support (3.24.5 was kept specifically for that)
+  # in exchange for one consistent Flutter version everywhere. Matches gudesk-release.yml.
+  FLUTTER_VERSION: "3.44.4"
+  ANDROID_FLUTTER_VERSION: "3.44.4"
+  # arm64 Linux (flutter-elinux) is a third-party fork that only tracks up to 3.27.1 --
+  # there is no 3.44.x tag/branch upstream, so it can't follow FLUTTER_VERSION like every
+  # other target. Pinned separately to the newest tag that actually exists.
+  FLUTTER_ELINUX_VERSION: "3.27.1"
   TAG_NAME: "${{ inputs.upload-tag }}"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2025.08.27
@@ -121,10 +122,7 @@ jobs:
       - name: Restore bridge files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          # arm64 is on Flutter 3.44, so it needs the bridge generated with the same Flutter
-          # (its *.freezed.dart must match the freezed the arm64 build resolves). x64 and every
-          # other platform keep the default 3.22.3-generated bridge.
-          name: ${{ matrix.job.arch == 'aarch64' && 'bridge-artifact-flutter-3.44' || 'bridge-artifact' }}
+          name: bridge-artifact
           path: ./
 
       - name: Install LLVM and Clang
@@ -134,14 +132,13 @@ jobs:
 
       - name: Install flutter
         id: flutter
-        # arm64 builds with FLUTTER_WINDOWS_ARM_VERSION (>=3.44); x64 stays on FLUTTER_VERSION.
         # subosito only ships an x64 Windows SDK (Flutter's release manifest lists x64 only),
         # so it installs x64 on both arches. The arm64 runner re-bootstraps Dart to arm64 in
         # the next step.
         uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225  # v2.12.0; https://github.com/subosito/flutter-action/issues/277
         with:
           channel: "stable"
-          flutter-version: ${{ matrix.job.arch == 'aarch64' && env.FLUTTER_WINDOWS_ARM_VERSION || env.FLUTTER_VERSION }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           architecture: x64
 
       - name: Force arm64 Dart SDK + engine
@@ -177,35 +174,10 @@ jobs:
           }
 
       # https://github.com/flutter/flutter/issues/155685
-      # x64 only: arm64 uses the stock native arm64 Windows engine, and the rustdesk/engine
-      # windows-x64-release.zip is built for the 3.24-era x64 engine (matches FLUTTER_VERSION).
-      - name: Replace engine with rustdesk custom flutter engine
-        if: ${{ matrix.job.arch == 'x86_64' }}
-        run: |
-          flutter doctor -v
-          flutter precache --windows
-          Invoke-WebRequest -Uri https://github.com/rustdesk/engine/releases/download/main/windows-x64-release.zip -OutFile windows-x64-release.zip
-          Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release
-          mv -Force windows-x64-release/*  C:/hostedtoolcache/windows/flutter/stable-${{ env.FLUTTER_VERSION }}-x64/bin/cache/artifacts/engine/windows-x64-release/
-
-      - name: Patch flutter
-        # x64 stays on Flutter 3.24.5, which needs the dropdown filter patch.
-        # arm64 is on Flutter 3.44 (patched separately below) and does not use this patch.
-        if: ${{ matrix.job.arch == 'x86_64' }}
-        shell: bash
-        run: |
-          cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff $(dirname $(dirname $(which flutter)))
-          cd $(dirname $(dirname $(which flutter)))
-          [[ "3.24.5" == ${{env.FLUTTER_VERSION}} ]] && git apply flutter_3.24.4_dropdown_menu_enableFilter.diff
-
-      - name: Patch RustDesk sources for Flutter 3.44 (arm64)
-        # arm64 is the only target on Flutter 3.44; apply its source/pubspec deltas on the fly
-        # (shared with the 3.44 bridge job) so the committed sources stay on Flutter 3.24.5.
-        # `flutter build` then runs `pub get`, regenerating pubspec.lock for the bumped deps.
-        if: ${{ matrix.job.arch == 'aarch64' }}
-        shell: bash
-        run: bash .github/patches/apply_flutter_3.44_source_patches.sh
-
+      # x64 previously replaced Flutter's engine with a custom rustdesk/engine build (from
+      # the 3.24-era). That build was never updated past Dec 2024 (rustdesk/engine's "main"
+      # release still only has a single frozen windows-x64-release.zip), so it can't follow
+      # this pipeline's move to Flutter 3.44+. x64 now uses the stock engine, same as arm64.
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
@@ -1610,11 +1582,11 @@ jobs:
             tar xf flutter_linux_${{ env.FLUTTER_VERSION }}-stable.tar.xz
             case ${{ matrix.job.arch }} in
               aarch64)
-                # clone repo and reset to flutter ${{ env.FLUTTER_VERSION }}
+                # clone repo and reset to flutter ${{ env.FLUTTER_ELINUX_VERSION }}
                 git clone https://github.com/sony/flutter-elinux.git || true
                 pushd flutter-elinux
                   git fetch
-                  git reset --hard ${{ env.FLUTTER_VERSION }}
+                  git reset --hard ${{ env.FLUTTER_ELINUX_VERSION }}
                   bin/flutter-elinux doctor -v
                   bin/flutter-elinux precache --linux
                 popd
