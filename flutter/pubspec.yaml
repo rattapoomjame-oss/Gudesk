@@ -111,6 +111,12 @@ dependencies:
   extended_text: 15.0.2
   xterm: 4.0.0
   sqflite: 2.2.0
+  # Used by lib/mobile/pages/terminal_page.dart (GoogleFonts.robotoMono() for the
+  # terminal's monospace font) -- my earlier "unused" claim was wrong, based on a
+  # GitHub code-search false negative. 6.2.1 fails to compile under Flutter 3.44's
+  # stricter Dart const-eval rules; now that the whole pipeline is on 3.44.4 (no
+  # more 3.24.5 platforms needing an old SDK), ^8.1.0 has no downside.
+  google_fonts: ^8.1.0
   vector_math: ^2.1.4
 
 dev_dependencies:
