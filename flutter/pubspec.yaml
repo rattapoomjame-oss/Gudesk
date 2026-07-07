@@ -111,12 +111,6 @@ dependencies:
   extended_text: 15.0.2
   xterm: 4.0.0
   sqflite: 2.2.0
-  # Not actually referenced anywhere in lib/ (the redesign's Inter font
-  # comes from a bundled asset, not this package's runtime API) — kept at
-  # its pre-redesign version since ^6.3.1+ requires Dart SDK >=3.7.0,
-  # which broke every platform in flutter-build.yml/nightly.yml still
-  # intentionally pinned to Flutter 3.24.5 for Windows 7 support.
-  google_fonts: ^6.2.1
   vector_math: ^2.1.4
 
 dev_dependencies:
