@@ -18,14 +18,18 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "7.3.1" apply false
-    // Downgraded from 2.1.21: Kotlin 2.0+ dropped compiler support for
-    // `-language-version 1.4`, which Flutter's own bundled flutter_tools/gradle
-    // build logic (included via includeBuild above) still targets, causing
-    // `:gradle:compileKotlin` to fail with "Language version 1.4 is no longer
-    // supported". This never surfaced before because Android builds were always
-    // skipped in CI (blocked upstream by an unrelated bridge-generation bug).
-    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+    // Bumped 7.3.1 -> 8.11.1 to match flutter_tools/gradle's own
+    // compileOnly("com.android.tools.build:gradle:8.11.1") dependency.
+    // AGP 8.11.1 requires Gradle 8.13+ (see gradle-wrapper.properties).
+    id "com.android.application" version "8.11.1" apply false
+    // Reverted my earlier (incorrect) downgrade to 1.9.24. The real cause of
+    // the "Language version 1.4 is no longer supported" / :gradle:compileKotlin
+    // failure was the Gradle wrapper being stuck on 7.6.4 -- its old kotlin-dsl
+    // integration targets language version 1.4 by default, incompatible with
+    // the Kotlin 2.2.20 compiler flutter_tools/gradle uses for itself. Now that
+    // Gradle is bumped to 8.13, this app's own Kotlin plugin version doesn't
+    // need to change; restored to its original pre-session value.
+    id "org.jetbrains.kotlin.android" version "2.1.21" apply false
 }
 
 include ":app"
