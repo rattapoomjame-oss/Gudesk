@@ -161,7 +161,11 @@ flutter:
   # device_info_plus, etc.) predate SPM support -- their frameworks fail to
   # link ("Framework 'image_picker_ios' not found"). Opt back into the
   # CocoaPods-only integration these versions actually support.
-  disable-swift-package-manager: true
+  # (The flat `disable-swift-package-manager: true` key from older Flutter
+  # docs has moved under `config:` -- Flutter's own error message pointed
+  # this out when the old key form was tried first.)
+  config:
+    enable-swift-package-manager: false
 
   # To add assets to your application, add an assets section, like this:
   assets:
