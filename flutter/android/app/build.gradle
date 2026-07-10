@@ -82,6 +82,9 @@ protobuf {
 }
 
 android {
+    // Mandatory as of AGP 8.0+ (previously inferred from AndroidManifest.xml's
+    // package attribute). Matches applicationId below.
+    namespace "com.carriez.flutter_hbb"
     compileSdkVersion 34
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
