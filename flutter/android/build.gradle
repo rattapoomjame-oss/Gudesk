@@ -10,9 +10,6 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
-subprojects {
-    project.evaluationDependsOn(':app')
-}
 
 // AGP 8.0+ requires every module (including plugin dependencies) to declare
 // a namespace. Several pub.dev plugin versions predate that requirement and
@@ -21,6 +18,10 @@ subprojects {
 // specified". Since those files live in the pub cache, not this repo, patch
 // them at evaluation time instead: fall back to the plugin's Maven group id,
 // which AGP accepts as a valid (if arbitrary) namespace.
+// Must be registered BEFORE evaluationDependsOn below: that call forces
+// early evaluation of some subprojects, and Gradle throws "Cannot run
+// Project.afterEvaluate(Closure) when the project is already evaluated" if
+// this hook is attached after a project has already finished evaluating.
 subprojects { subproject ->
     subproject.afterEvaluate {
         def androidExt = subproject.extensions.findByName('android')
@@ -28,6 +29,10 @@ subprojects { subproject ->
             androidExt.namespace = subproject.group.toString()
         }
     }
+}
+
+subprojects {
+    project.evaluationDependsOn(':app')
 }
 
 tasks.register("clean", Delete) {
