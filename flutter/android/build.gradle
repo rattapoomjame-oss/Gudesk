@@ -28,6 +28,17 @@ subprojects { subproject ->
         if (androidExt != null && androidExt.hasProperty('namespace') && androidExt.namespace == null) {
             androidExt.namespace = subproject.group.toString()
         }
+        // Some pub.dev plugins (e.g. external_path 1.0.3) declare Java
+        // sourceCompatibility/targetCompatibility 1.8 but leave Kotlin's
+        // jvmTarget unset, which now defaults to the active JDK (17 on this
+        // runner) instead of matching Java -- Gradle rejects that mismatch
+        // ("Inconsistent JVM Target Compatibility Between Java and Kotlin
+        // Tasks"). Force Kotlin to match Java's target for every subproject.
+        subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
     }
 }
 
