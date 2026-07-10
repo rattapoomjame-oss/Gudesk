@@ -156,6 +156,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  # Flutter 3.44 defaults iOS/macOS builds to Swift Package Manager, but
+  # several pinned plugin versions (image_picker_ios 0.8.12+2, file_picker,
+  # device_info_plus, etc.) predate SPM support -- their frameworks fail to
+  # link ("Framework 'image_picker_ios' not found"). Opt back into the
+  # CocoaPods-only integration these versions actually support.
+  disable-swift-package-manager: true
 
   # To add assets to your application, add an assets section, like this:
   assets:
