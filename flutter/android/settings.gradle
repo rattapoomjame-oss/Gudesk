@@ -19,7 +19,13 @@ pluginManagement {
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
     id "com.android.application" version "7.3.1" apply false
-    id "org.jetbrains.kotlin.android" version "2.1.21" apply false
+    // Downgraded from 2.1.21: Kotlin 2.0+ dropped compiler support for
+    // `-language-version 1.4`, which Flutter's own bundled flutter_tools/gradle
+    // build logic (included via includeBuild above) still targets, causing
+    // `:gradle:compileKotlin` to fail with "Language version 1.4 is no longer
+    // supported". This never surfaced before because Android builds were always
+    // skipped in CI (blocked upstream by an unrelated bridge-generation bug).
+    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
 }
 
 include ":app"
