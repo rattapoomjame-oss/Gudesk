@@ -14,6 +14,22 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// AGP 8.0+ requires every module (including plugin dependencies) to declare
+// a namespace. Several pub.dev plugin versions predate that requirement and
+// have no namespace in their own bundled android/build.gradle (e.g.
+// external_path 1.0.3), which fails the whole build with "Namespace not
+// specified". Since those files live in the pub cache, not this repo, patch
+// them at evaluation time instead: fall back to the plugin's Maven group id,
+// which AGP accepts as a valid (if arbitrary) namespace.
+subprojects { subproject ->
+    subproject.afterEvaluate {
+        def androidExt = subproject.extensions.findByName('android')
+        if (androidExt != null && androidExt.hasProperty('namespace') && androidExt.namespace == null) {
+            androidExt.namespace = subproject.group.toString()
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
